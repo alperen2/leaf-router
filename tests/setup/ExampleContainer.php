@@ -2,6 +2,8 @@
 
 namespace App;
 
+use ReflectionClass;
+
 class ExampleContainer {
     /**
      * @param string[] handler 
@@ -9,9 +11,13 @@ class ExampleContainer {
      */
     public function call($handler, $params) {
         [$controller, $method] = $handler;
-        if (call_user_func_array([new $controller(), $method], $params) === false) {
-            // Try to call the method as a non-static method. (the if does nothing, only avoids the notice)
-            if (forward_static_call_array([$controller, $method], $params) === false);
+        $reflectionClass = new ReflectionClass($controller);
+        $staticMethods = $reflectionClass->getMethods();
+
+        if (in_array($method, $staticMethods)) {
+            forward_static_call_array([$controller, $method], $params);
+        } else {
+            call_user_func_array([new $controller(), $method], $params);
         }
     }
 }

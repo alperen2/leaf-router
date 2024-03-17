@@ -127,7 +127,7 @@ test('delete route', function () {
 
 test('route should return url by route name', function () {
     $router = new Router;
-    $router->match('GET', '/route/url', ['handler', 'name' => 'route-name']);
+    $router->match('GET', '/route/url', ['handler'], 'route-name');
 
     $routeUrl = $router->route('route-name');
 
@@ -136,7 +136,7 @@ test('route should return url by route name', function () {
 
 test('route should return url with replaced named params using params as array', function () {
     $router = new Router;
-    $router->match('GET', '/movies/{movieId}/photos/{photoId}', ['handler', 'name' => 'route-name']);
+    $router->match('GET', '/movies/{movieId}/photos/{photoId}', ['handler'], 'route-name');
 
     $routeUrl = $router->route('route-name', ['movieId' => 'my-movie', 'photoId' => 'my-photo']);
 
@@ -145,7 +145,7 @@ test('route should return url with replaced named params using params as array',
 
 test('route should return url with replaced named params using params as string', function () {
     $router = new Router;
-    $router->match('GET', '/movies/{movieId}/edit', ['handler', 'name' => 'route-name']);
+    $router->match('GET', '/movies/{movieId}/edit', ['handler'], 'route-name');
 
     $routeUrl = $router->route('route-name', 'my-movie');
 
@@ -160,7 +160,7 @@ test('route should throw exception if no route found for name', function () {
 
 test('route should throw error if no named param found for params array', function () {
     $router = new Router;
-    $router->match('GET', '/movies/{movieId}/photos/{photoId}', ['handler', 'name' => 'route-name']);
+    $router->match('GET', '/movies/{movieId}/photos/{photoId}', ['handler'], 'route-name');
 
     expect(fn() => $router->route('route-name', ['movieId' => 'my-movie', 'otherId' => 'my-photo', 'someOtherId' => 'my-music']))
         ->toThrow(Exception::class, 'Param "otherId" not found in route "/movies/{movieId}/photos/{photoId}"');
