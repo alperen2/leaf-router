@@ -1,5 +1,6 @@
 <?php
 
+use App\ExampleMiddleware;
 use Leaf\Router;
 
 class TMid
@@ -7,30 +8,6 @@ class TMid
     static $callstack = '';
 }
 
-test('leaf middleware', function () {
-	TMid::$callstack = '';
-
-	class AppMid {
-		public function call()
-		{
-			TMid::$callstack .= '1';
-		}
-	}
-
-	$_SERVER['REQUEST_METHOD'] = 'GET';
-	$_SERVER['REQUEST_URI'] = '/';
-
-    $router = new Router;
-
-	$router->use(new AppMid);
-	$router->get('/', function () {
-		TMid::$callstack .= '2';
-	});
-
-	$router->run();
-
-	expect(TMid::$callstack)->toBe('12');
-});
 
 test('in-route middleware', function () {
 	$_SERVER['REQUEST_METHOD'] = 'POST';
@@ -93,6 +70,24 @@ test('before router middleware', function () {
 	ob_end_clean();
 });
 
+test('before router class middleware', function () {
+	$_SERVER['REQUEST_METHOD'] = 'GET';
+	$_SERVER['REQUEST_URI'] = '/test';
+
+	require __DIR__.'/setup/ExampleMiddleware.php';
+	Router::setContainer(null);
+	Router::before('GET', '/.*', [ExampleMiddleware::class, 'checkAuth']);
+	Router::get('/test', function () {
+		echo '2';
+	});
+
+	ob_start();
+	Router::run();
+
+	expect(ob_get_contents())->toBe('auth ok2');
+	ob_end_clean();
+});
+
 test('after router middleware', function () {
 	$_SERVER['REQUEST_METHOD'] = 'PUT';
 	$_SERVER['REQUEST_URI'] = '/test';
@@ -114,6 +109,7 @@ test('after router middleware', function () {
 	// resets
 	$router->hook('router.after', function () {});
 });
+
 
 test('middleware is only called for routes that run', function () {
 	$_SERVER['REQUEST_METHOD'] = 'PUT';
@@ -160,94 +156,3 @@ test('middleware is only called for routes that run', function () {
 	ob_end_clean();
 });
 
-test('in-route named middleware', function () {
-	$_SERVER['REQUEST_METHOD'] = 'GET';
-	$_SERVER['REQUEST_URI'] = '/thisRoute';
-
-	$router = new Router;
-	$router->registerMiddleware('mid1', function () use ($router) {
-		echo 'named middleware --- ';
-	});
-
-	$router->get('/thisRoute', ['middleware' => 'mid1', function () {
-		echo 'route';
-	}]);
-
-	ob_start();
-	$router->run();
-
-	expect(ob_get_contents())->toBe('named middleware --- route');
-
-	ob_end_clean();
-});
-
-test('in-route middleware + groups', function () {
-	$_SERVER['REQUEST_METHOD'] = 'GET';
-	$_SERVER['REQUEST_URI'] = '/thatGroup/thatRoute';
-
-	$router = new Router;
-	$router->registerMiddleware('mid1', function () use ($router) {
-		echo 'named middleware 3 --- ';
-	});
-
-	$router->group('/thatGroup', ['middleware' => 'mid1', function () use ($router) {
-		$router->get('/thatRoute', function () {
-			echo 'route';
-		});
-	}]);
-
-	ob_start();
-	$router->run();
-
-	expect(ob_get_contents())->toBe('named middleware 3 --- route');
-
-	ob_end_clean();
-});
-
-test('in-route named middleware + groups', function () {
-	$_SERVER['REQUEST_METHOD'] = 'GET';
-	$_SERVER['REQUEST_URI'] = '/thisGroup/thisRoute';
-
-	$router = new Router;
-	$router->registerMiddleware('mid1', function () use ($router) {
-		echo 'named middleware 2 --- ';
-	});
-
-	$router->group('/thisGroup', ['middleware' => 'mid1', function () use ($router) {
-		$router->get('/thisRoute', function () {
-			echo 'route';
-		});
-	}]);
-
-	ob_start();
-	$router->run();
-
-	expect(ob_get_contents())->toBe('named middleware 2 --- route');
-
-	ob_end_clean();
-});
-
-test('in-route named middleware + groups + sub groups', function () {
-	$_SERVER['REQUEST_METHOD'] = 'GET';
-	$_SERVER['REQUEST_URI'] = '/thisGroup/thisSubGroup/thisRoute';
-
-	$router = new Router;
-	$router->registerMiddleware('mid1', function () use ($router) {
-		echo 'named middleware 3 --- ';
-	});
-
-	$router->group('/thisGroup', ['middleware' => 'mid1', function () use ($router) {
-		$router->group('/thisSubGroup', function () use ($router) {
-			$router->get('/thisRoute', function () {
-				echo 'route';
-			});
-		});
-	}]);
-
-	ob_start();
-	$router->run();
-
-	expect(ob_get_contents())->toBe('named middleware 3 --- route');
-
-	ob_end_clean();
-});

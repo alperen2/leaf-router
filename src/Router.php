@@ -99,16 +99,17 @@ class Router extends Core
      *
      * @param string $methods Allowed HTTP methods (separated by `|`)
      * @param string $pattern The route pattern/path to match
-     * @param string|array|callable $handler The handler for route when matched
+     * @param string|string[]|callable $handler The handler for route when matched
+     * @param ?string $name The route name  
      */
-    public static function match(string $methods, string $pattern, $handler)
+    public static function match(string $methods, string $pattern, $handler, $name = '')
     {
         $rawPattern = $pattern;
         $pattern = static::$groupRoute . '/' . trim($pattern, '/');
         $pattern = static::$groupRoute ? rtrim($pattern, '/') : $pattern;
 
         $routeOptions = [
-            'name' => null,
+            'name' => $name,
             'middleware' => null,
             'namespace' => null,
         ];
@@ -160,12 +161,13 @@ class Router extends Core
      * @param string $pattern The route pattern/path to match
      * @param string|array|callable The handler for route when matched
      */
-    public static function all(string $pattern, $handler)
+    public static function all(string $pattern, $handler, $name = '')
     {
         static::match(
             'GET|POST|PUT|DELETE|OPTIONS|PATCH|HEAD',
             $pattern,
-            $handler
+            $handler,
+            $name
         );
     }
 
@@ -175,9 +177,9 @@ class Router extends Core
      * @param string $pattern The route pattern/path to match
      * @param string|array|callable The handler for route when matched
      */
-    public static function get(string $pattern, $handler)
+    public static function get(string $pattern, $handler, $name = '')
     {
-        static::match('GET', $pattern, $handler);
+        static::match('GET', $pattern, $handler, $name);
     }
 
     /**
@@ -186,9 +188,9 @@ class Router extends Core
      * @param string $pattern The route pattern/path to match
      * @param string|array|callable The handler for route when matched
      */
-    public static function post(string $pattern, $handler)
+    public static function post(string $pattern, $handler, $name = '')
     {
-        static::match('POST', $pattern, $handler);
+        static::match('POST', $pattern, $handler, $name);
     }
 
     /**
@@ -197,9 +199,9 @@ class Router extends Core
      * @param string $pattern The route pattern/path to match
      * @param string|array|callable The handler for route when matched
      */
-    public static function put(string $pattern, $handler)
+    public static function put(string $pattern, $handler, $name = '')
     {
-        static::match('PUT', $pattern, $handler);
+        static::match('PUT', $pattern, $handler, $name);
     }
 
     /**
@@ -208,9 +210,9 @@ class Router extends Core
      * @param string $pattern The route pattern/path to match
      * @param string|array|callable The handler for route when matched
      */
-    public static function patch(string $pattern, $handler)
+    public static function patch(string $pattern, $handler, $name = '')
     {
-        static::match('PATCH', $pattern, $handler);
+        static::match('PATCH', $pattern, $handler, $name);
     }
 
     /**
@@ -219,9 +221,9 @@ class Router extends Core
      * @param string $pattern The route pattern/path to match
      * @param string|array|callable The handler for route when matched
      */
-    public static function options(string $pattern, $handler)
+    public static function options(string $pattern, $handler, $name = '')
     {
-        static::match('OPTIONS', $pattern, $handler);
+        static::match('OPTIONS', $pattern, $handler, $name);
     }
 
     /**
@@ -230,9 +232,9 @@ class Router extends Core
      * @param string $pattern The route pattern/path to match
      * @param string|array|callable The handler for route when matched
      */
-    public static function delete(string $pattern, $handler)
+    public static function delete(string $pattern, $handler, $name = '')
     {
-        static::match('DELETE', $pattern, $handler);
+        static::match('DELETE', $pattern, $handler, $name);
     }
 
     /**
@@ -270,13 +272,13 @@ class Router extends Core
      */
     public static function resource(string $pattern, string $controller)
     {
-        static::match('GET|HEAD', $pattern, "$controller@index");
-        static::post($pattern, "$controller@store");
-        static::match('GET|HEAD', "$pattern/create", "$controller@create");
-        static::match('POST|DELETE', "$pattern/{id}/delete", "$controller@destroy");
-        static::match('POST|PUT|PATCH', "$pattern/{id}/edit", "$controller@update");
-        static::match('GET|HEAD', "$pattern/{id}/edit", "$controller@edit");
-        static::match('GET|HEAD', "$pattern/{id}", "$controller@show");
+        static::match('GET|HEAD', $pattern, "$controller@index", "$controller@index");
+        static::post($pattern, "$controller@store", "$controller@store");
+        static::match('GET|HEAD', "$pattern/create", "$controller@create", "$controller@create");
+        static::match('POST|DELETE', "$pattern/{id}/delete", "$controller@destroy", "$controller@destroy");
+        static::match('POST|PUT|PATCH', "$pattern/{id}/edit", "$controller@update", "$controller@update");
+        static::match('GET|HEAD', "$pattern/{id}/edit", "$controller@edit", "$controller@edit");
+        static::match('GET|HEAD', "$pattern/{id}", "$controller@show", "$controller@show");
     }
 
     /**
@@ -295,11 +297,11 @@ class Router extends Core
      */
     public static function apiResource(string $pattern, string $controller)
     {
-        static::match('GET|HEAD', $pattern, "$controller@index");
-        static::post($pattern, "$controller@store");
-        static::match('POST|DELETE', "$pattern/{id}/delete", "$controller@destroy");
-        static::match('POST|PUT|PATCH', "$pattern/{id}/edit", "$controller@update");
-        static::match('GET|HEAD', "$pattern/{id}", "$controller@show");
+        static::match('GET|HEAD', $pattern, "$controller@index", "$controller@index");
+        static::post($pattern, "$controller@store", "$controller@store");
+        static::match('POST|DELETE', "$pattern/{id}/delete", "$controller@destroy", "$controller@destroy");
+        static::match('POST|PUT|PATCH', "$pattern/{id}/edit", "$controller@update", "$controller@update");
+        static::match('GET|HEAD', "$pattern/{id}", "$controller@show", "$controller@show");
     }
 
     /**

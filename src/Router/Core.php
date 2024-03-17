@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Leaf\Router;
 
+use ReflectionClass;
+
 /**
  * Leaf Router [Core]
  * ---------------
@@ -50,11 +52,6 @@ class Core
      * Leaf app middleware
      */
     protected static $middleware = [];
-
-    /**
-     * Named middleware
-     */
-    protected static $namedMiddleware = [];
 
     /**
      * Route specific middleware
@@ -164,9 +161,6 @@ class Core
         if (is_array($handler)) {
             $handlerData = $handler;
 
-            if (is_string($handler['middleware'] ?? null)) {
-                $handlerData['middleware'] = static::$namedMiddleware[$handler['middleware']] ?? null;
-            }
 
             if (isset($handler['handler'])) {
                 $handler = $handler['handler'];
@@ -232,9 +226,9 @@ class Core
      *
      * @param string $methods Allowed methods, separated by |
      * @param string|array $path The path/route to apply middleware on
-     * @param callable $handler The middleware handler
+     * @param callable|string[] $handler The middleware handler
      */
-    public static function before(string $methods, $path, callable $handler)
+    public static function before(string $methods, $path, $handler)
     {
         if (is_array($path)) {
             if (!isset(static::$namedRoutes[$path[0]])) {
@@ -253,39 +247,6 @@ class Core
                 'handler' => $handler,
             ];
         }
-    }
-
-    /**
-     * Add middleware
-     *
-     * This method prepends new middleware to the application middleware stack.
-     * The argument must be an instance that subclasses Leaf_Middleware.
-     *
-     * @param \Leaf\Middleware $newMiddleware The middleware to set
-     */
-    public static function use($newMiddleware)
-    {
-        if (in_array($newMiddleware, static::$middleware)) {
-            $middleware_class = get_class($newMiddleware);
-            throw new \RuntimeException("Circular Middleware setup detected. Tried to queue the same Middleware instance ({$middleware_class}) twice.");
-        }
-
-        if (!empty(static::$middleware)) {
-            $newMiddleware->setNextMiddleware(static::$middleware[0]);
-        }
-
-        array_unshift(static::$middleware, $newMiddleware);
-    }
-
-    /**
-     * Register a middleware in your Leaf application by name
-     * 
-     * @param string $name The name of the middleware
-     * @param callable $middleware The middleware to register
-     */
-    public function registerMiddleware(string $name, callable $middleware)
-    {
-        static::$namedMiddleware[$name] = $middleware;
     }
 
     /**
@@ -544,11 +505,13 @@ class Core
             if (static::$container && method_exists(static::$container, 'call')) {
                 static::$container->call([$controller, $method], $params);
             } else {
-                // First check if is a static method, directly trying to invoke it.
-                // If isn't a valid static method, we will try as a normal method invocation.
-                if (call_user_func_array([new $controller(), $method], $params) === false) {
-                    // Try to call the method as a non-static method. (the if does nothing, only avoids the notice)
-                    if (forward_static_call_array([$controller, $method], $params) === false);
+                $reflectionClass = new ReflectionClass($controller);
+                $staticMethods = $reflectionClass->getMethods();
+
+                if (in_array($method, $staticMethods)) {
+                    forward_static_call_array([$controller, $method], $params);
+                } else {
+                    call_user_func_array([new $controller(), $method], $params);
                 }
             }
         }
